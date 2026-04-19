@@ -569,6 +569,20 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-section">
+        <span class="share-label">Share:</span>
+        <div class="share-buttons">
+          <button class="share-button share-copy" data-activity="${name}" title="Copy link">
+            🔗 Copy Link
+          </button>
+          <button class="share-button share-twitter" data-activity="${name}" title="Share on X (Twitter)">
+            𝕏 X (Twitter)
+          </button>
+          <button class="share-button share-whatsapp" data-activity="${name}" title="Share on WhatsApp">
+            💬 WhatsApp
+          </button>
+        </div>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -587,7 +601,70 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // Add click handlers for share buttons
+    activityCard.querySelector(".share-copy").addEventListener("click", () => {
+      shareActivity(name, "copy");
+    });
+    activityCard.querySelector(".share-twitter").addEventListener("click", () => {
+      shareActivity(name, "twitter");
+    });
+    activityCard.querySelector(".share-whatsapp").addEventListener("click", () => {
+      shareActivity(name, "whatsapp");
+    });
+
     activitiesList.appendChild(activityCard);
+  }
+
+  // Generate a shareable URL for an activity
+  function generateShareUrl(activityName) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("activity", activityName);
+    return url.toString();
+  }
+
+  // Share an activity using the specified method
+  function shareActivity(activityName, method) {
+    const shareUrl = generateShareUrl(activityName);
+    const shareText = `Check out "${activityName}" at Mergington High School!`;
+
+    if (method === "copy") {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showMessage("Link copied to clipboard!", "success");
+      }).catch(() => {
+        // Fallback for browsers without clipboard API
+        try {
+          const tempInput = document.createElement("input");
+          tempInput.value = shareUrl;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          const success = document.execCommand("copy");
+          document.body.removeChild(tempInput);
+          if (success) {
+            showMessage("Link copied to clipboard!", "success");
+          } else {
+            showMessage("Could not copy link. Please copy it manually: " + shareUrl, "error");
+          }
+        } catch (err) {
+          showMessage("Could not copy link. Please copy it manually: " + shareUrl, "error");
+        }
+      });
+    } else if (method === "twitter") {
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+      window.open(twitterUrl, "_blank", "noopener,noreferrer");
+    } else if (method === "whatsapp") {
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`;
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  // Handle ?activity= query param from shared links
+  function handleSharedActivityLink() {
+    const params = new URLSearchParams(window.location.search);
+    const sharedActivity = params.get("activity");
+    if (sharedActivity) {
+      searchQuery = sharedActivity;
+      searchInput.value = sharedActivity;
+    }
   }
 
   // Event listeners for search and filter
@@ -864,5 +941,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize app
   checkAuthentication();
   initializeFilters();
+  handleSharedActivityLink();
   fetchActivities();
 });
